@@ -1,0 +1,47 @@
+<html>
+  <body>
+    <canvas id="canvas"/>
+    <script src="browsepeg.js"></script>
+    <script>
+      var canvas = document.getElementById('canvas');
+      var context = canvas.getContext('2d');
+
+      var init = Module.cwrap('init', 'number', ['string']);
+      var decode_frame = Module.cwrap('decode_frame', 'number');
+
+      // Load the embedded file.
+      init("delta.mpg");
+
+      var image;
+
+      function _present_frame(width, height, pointer) {
+        console.log(arguments);
+        if (!image || image.width != width || image.height != height) {
+          image = context.createImageData(width, height);
+          canvas.width = width;
+          canvas.height = height;
+        }
+
+        var buffer = new Uint8ClampedArray(
+        	Module.HEAPU8.buffer, pointer, image.data.length);
+
+        image.data.set(buffer);
+
+        // Fix the conversion so this is not necessary.
+        for (var idx = 3; idx < image.data.length; idx += 4) {
+          image.data[idx] = 255;
+        }
+
+        context.putImageData(image, 0, 0);
+      }
+
+      function frame() {
+        if (!decode_frame()) {
+          requestAnimationFrame(frame);
+        } 
+      }
+      requestAnimationFrame(frame);
+
+    </script>
+  </body>
+</html>
